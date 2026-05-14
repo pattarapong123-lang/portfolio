@@ -2135,9 +2135,12 @@
 <!-- EXPERIENCE -->
 <section id="experience" style="background:var(--white)">
   <div class="sec-wrap">
-    <div class="sec-head">
-      <div class="sec-eye">EXPERIENCE</div>
-      <div class="sec-title">Work Experience</div>
+    <div class="skills-header">
+      <div class="sec-head">
+        <div class="sec-eye">EXPERIENCE</div>
+        <div class="sec-title">Work Experience</div>
+      </div>
+      <button class="btn-add-skill" id="btnEditExp" style="display:none" onclick="openExpEdit()">✏️ แก้ไขประสบการณ์</button>
     </div>
 
     <!-- STATS BAR -->
@@ -2542,6 +2545,7 @@
       duration: '3 ปี',
       location: 'สาขาบางนา',
       hdrClass: 'hdr-current',
+      type: 'is-current',
       iconBg: 'linear-gradient(135deg,#dbeafe,#eff6ff)',
       duties: [
         'ดูแลและแก้ไขปัญหา IT ภายในสาขาครบวงจร ทั้งคอมพิวเตอร์ เครื่องพิมพ์ IP Phone และระบบเครือข่าย',
@@ -2562,6 +2566,7 @@
       duration: '2 ปี',
       location: 'สำนักงานใหญ่',
       hdrClass: 'hdr-corp',
+      type: 'is-corp',
       iconBg: 'linear-gradient(135deg,#fffbeb,#fef3c7)',
       duties: [
         'ติดตั้งและ Config คอมพิวเตอร์ อุปกรณ์เครือข่าย และระบบ IP Phone สำหรับสาขาใหม่ทั่วประเทศ',
@@ -2582,6 +2587,7 @@
       duration: '2 ปี',
       location: 'จ.ชลบุรี',
       hdrClass: 'hdr-past',
+      type: 'is-past',
       iconBg: 'linear-gradient(135deg,#f9fafb,#f3f4f6)',
       duties: [
         'ให้บริการซ่อมและบำรุงรักษาคอมพิวเตอร์ Desktop และ Laptop ทั้งลูกค้าทั่วไปและองค์กร',
@@ -2601,6 +2607,7 @@
       duration: '4 เดือน',
       location: 'จ.นครราชสีมา',
       hdrClass: 'hdr-intern',
+      type: 'is-intern',
       iconBg: 'linear-gradient(135deg,#f0fdf4,#bbf7d0)',
       duties: [
         'สนับสนุนงาน IT ภายใน Resort ด้านระบบเครือข่าย Wi-Fi ห้องพักและพื้นที่ส่วนกลาง',
@@ -2895,8 +2902,9 @@
     document.getElementById('detailDesc').textContent = w.desc || '-';
     document.getElementById('detailTags').innerHTML = (w.tools||'').split(',').filter(Boolean).map(t=>`<span class="tag">${t.trim()}</span>`).join('');
 
-    // Image gallery
-    const imgs = w.images || (w.img ? [w.img] : []);
+    // Image gallery — ใช้ images[] ถ้ามี, ไม่งั้น fallback เป็น cover img
+    const rawImgs = Array.isArray(w.images) && w.images.length > 0 ? w.images : [];
+    const imgs = rawImgs.length > 0 ? rawImgs : (w.img ? [w.img] : []);
     const sec = document.getElementById('detailImagesSection');
     const grid = document.getElementById('detailImgGrid');
     if (imgs.length > 0) {
@@ -2939,7 +2947,7 @@
     document.getElementById('wTools').value = w.tools || '';
     document.getElementById('wDate').value = w.date || '';
     document.getElementById('wImg').value = w.img || '';
-    const imgs = w.images || [];
+    const imgs = (w.images || []).filter(u => u !== w.img);
     document.getElementById('wImages').value = JSON.stringify(imgs);
     if (imgs.length > 0) renderMultiImgPreview(imgs);
     else {
@@ -3108,7 +3116,9 @@
         desc: document.getElementById('wDesc').value.trim() || '-',
         tools: document.getElementById('wTools').value.trim(),
         date: document.getElementById('wDate').value,
-        img: imgUrl, images: galleryUrls,
+        img: imgUrl,
+        // กรอง cover URL ออกจาก gallery ป้องกันรูปซ้ำ
+        images: galleryUrls.filter(u => u !== imgUrl),
       };
       await saveWorkToDB(payload, editId || null);
       ov.classList.remove('open');
@@ -3708,11 +3718,26 @@
     else { inp.type = 'password'; eye.textContent = '👁️'; }
   }
 
+  const AUTH_KEY = 'itpf_auth_v1';
+  const AUTH_TTL = 7 * 24 * 60 * 60 * 1000; // 7 วัน
+
+  function saveAuthState() {
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ loggedIn: true, exp: Date.now() + AUTH_TTL }));
+  }
+  function clearAuthState() { localStorage.removeItem(AUTH_KEY); }
+  function checkAuthState() {
+    try {
+      const d = JSON.parse(localStorage.getItem(AUTH_KEY));
+      return d && d.loggedIn && d.exp > Date.now();
+    } catch { return false; }
+  }
+
   function submitLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     if (u === 'admin' && p === 'D0h0me*1') {
       isAdmin = true;
+      saveAuthState();
       setAdminUI(true);
       closeLoginModal();
     } else {
@@ -3725,7 +3750,18 @@
   function logoutAdmin() {
     if (!confirm('ต้องการออกจากระบบ Admin?')) return;
     isAdmin = false;
+    clearAuthState();
     setAdminUI(false);
+  }
+
+  // ── Auto-restore login on page load ──
+  if (checkAuthState()) {
+    isAdmin = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setAdminUI(true));
+    } else {
+      setTimeout(() => setAdminUI(true), 0);
+    }
   }
 
   function setAdminUI(loggedIn) {
@@ -3737,6 +3773,8 @@
     heb.style.display = loggedIn ? 'inline-flex' : 'none';
     // ปุ่มแก้ไข About Me
     document.getElementById('aboutEditBtn').style.display = loggedIn ? 'inline-flex' : 'none';
+    // ปุ่มแก้ไข Experience
+    document.getElementById('btnEditExp').style.display = loggedIn ? 'inline-flex' : 'none';
     // nav: ซ่อน/แสดง Login & Logout
     document.getElementById('loginNavBtn').parentElement.style.display  = loggedIn ? 'none' : '';
     document.getElementById('logoutNavItem').style.display = loggedIn ? '' : 'none';
@@ -4152,6 +4190,253 @@
 
   document.getElementById('aboutEditClose').onclick = closeAboutEdit;
   document.getElementById('aboutEditOverlay').onclick = e => { if (e.target === document.getElementById('aboutEditOverlay')) closeAboutEdit(); };
+</script>
+
+<!-- ══════════════════════════════════════════
+     WORK EXPERIENCE EDIT MODAL
+══════════════════════════════════════════ -->
+<div class="m-overlay" id="expEditOverlay">
+  <div class="modal" style="max-width:760px;padding:36px;max-height:90vh;overflow-y:auto;">
+    <button class="m-close" id="expEditClose" style="position:absolute;top:14px;right:14px;">✕</button>
+    <div style="font-family:'Prompt',sans-serif;font-size:20px;font-weight:700;color:var(--primary);margin-bottom:24px;">✏️ แก้ไข Work Experience</div>
+
+    <div id="expEditList" style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px;"></div>
+
+    <button onclick="addExpCard()" style="width:100%;padding:12px;background:rgba(37,99,235,0.07);border:2px dashed rgba(37,99,235,0.3);border-radius:10px;font-family:'Prompt',sans-serif;font-size:14px;font-weight:600;color:var(--accent2);cursor:pointer;margin-bottom:20px;">＋ เพิ่มประสบการณ์ใหม่</button>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn-main" style="flex:1;justify-content:center;" onclick="saveExpEdit()">💾 บันทึก</button>
+      <button class="btn-sec" style="padding:13px 20px;" onclick="closeExpEdit()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .exp-edit-card {
+    border:1px solid var(--border);border-radius:12px;padding:20px;
+    background:var(--white);position:relative;
+  }
+  .exp-edit-card-header {
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .exp-edit-card-num {
+    font-family:'Share Tech Mono',monospace;font-size:11px;
+    color:var(--accent2);font-weight:700;letter-spacing:1px;
+    background:rgba(37,99,235,0.08);padding:3px 10px;border-radius:20px;
+  }
+  .exp-edit-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+  .exp-edit-duties { display:flex;flex-direction:column;gap:8px;margin-top:4px; }
+  .exp-edit-duty-row { display:flex;gap:8px;align-items:center; }
+  .exp-edit-duty-row input { flex:1; }
+  .exp-edit-duty-row button { flex-shrink:0;width:28px;height:28px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center; }
+  .exp-type-select { font-family:'Prompt',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;color:var(--text);background:var(--white); }
+</style>
+
+<script>
+  // ── EXPERIENCE EDIT ──
+  const EXP_KEY = 'itpf_exp_v2';
+  let editExpList = [];
+
+  const EXP_TYPES = [
+    { val:'is-current', label:'ปัจจุบัน', badge:'badge-current', badgeText:'● ปัจจุบัน' },
+    { val:'is-past',    label:'งานที่ผ่านมา', badge:'badge-past', badgeText:'✓ ผ่านมา' },
+    { val:'is-intern',  label:'ฝึกงาน', badge:'badge-intern', badgeText:'🎓 ฝึกงาน' },
+    { val:'is-corp',    label:'สำนักงานใหญ่/บริษัท', badge:'badge-past', badgeText:'🏢 บริษัท' },
+  ];
+
+  function loadExpData() {
+    try { return JSON.parse(localStorage.getItem(EXP_KEY)); } catch { return null; }
+  }
+  function saveExpDataLocal(d) { localStorage.setItem(EXP_KEY, JSON.stringify(d)); }
+
+  // Apply saved EXP on load — override EXP_DATA if localStorage has data
+  (function applyExp() {
+    const saved = loadExpData();
+    if (saved && saved.length) {
+      EXP_DATA.length = 0;
+      saved.forEach(e => EXP_DATA.push(e));
+      renderExpCards();
+    }
+  })();
+
+  function renderExpCards() {
+    const grid = document.querySelector('.exp-card-grid');
+    if (!grid) return;
+    grid.innerHTML = EXP_DATA.map((exp, idx) => {
+      const typeClass = exp.type || 'is-past';
+      const typeInfo  = EXP_TYPES.find(t => t.val === typeClass) || EXP_TYPES[1];
+      return `
+      <div class="exp-card ${typeClass}" style="animation-delay:${idx*0.1}s" onclick="openExpDetail(${idx})">
+        <div class="exp-card-top">
+          <div class="exp-card-badge ${typeInfo.badge}">${typeInfo.badgeText}</div>
+          <div class="exp-card-icon">${exp.icon || '🏢'}</div>
+          <div class="exp-card-info">
+            <div class="exp-card-company">${exp.company}</div>
+            <div class="exp-card-loc">📍 ${exp.sub}</div>
+          </div>
+          <div class="exp-card-center">
+            <div class="exp-card-position">💼 ${exp.position}</div>
+          </div>
+        </div>
+        <div class="exp-card-footer">
+          <div class="exp-card-period">${exp.period}</div>
+          <div class="exp-card-dur">${exp.duration}</div>
+          <div class="exp-card-arrow">→</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openExpEdit() {
+    editExpList = JSON.parse(JSON.stringify(EXP_DATA));
+    renderExpEditList();
+    document.getElementById('expEditOverlay').classList.add('open');
+  }
+
+  function closeExpEdit() {
+    document.getElementById('expEditOverlay').classList.remove('open');
+  }
+
+  function addExpCard() {
+    editExpList.push({
+      icon:'🏢', company:'', sub:'', position:'', period:'', duration:'',
+      location:'', hdrClass:'hdr-past', iconBg:'linear-gradient(135deg,#f9fafb,#f3f4f6)',
+      type:'is-past',
+      duties:[''],
+      tags:[]
+    });
+    renderExpEditList();
+    // scroll to bottom
+    setTimeout(() => {
+      const list = document.getElementById('expEditList');
+      list.lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }, 100);
+  }
+
+  function removeExpCard(i) {
+    if (!confirm('ต้องการลบประสบการณ์นี้?')) return;
+    editExpList.splice(i, 1);
+    renderExpEditList();
+  }
+
+  function addExpDuty(i) {
+    editExpList[i].duties.push('');
+    renderExpEditList();
+  }
+
+  function removeExpDuty(i, di) {
+    editExpList[i].duties.splice(di, 1);
+    renderExpEditList();
+  }
+
+  function renderExpEditList() {
+    const container = document.getElementById('expEditList');
+    container.innerHTML = editExpList.map((exp, i) => `
+      <div class="exp-edit-card">
+        <div class="exp-edit-card-header">
+          <span class="exp-edit-card-num">ประสบการณ์ที่ ${i+1}</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select class="exp-type-select" onchange="editExpList[${i}].type=this.value;updateExpHdr(${i},this.value)">
+              ${EXP_TYPES.map(t=>`<option value="${t.val}" ${(exp.type||'is-past')===t.val?'selected':''}>${t.label}</option>`).join('')}
+            </select>
+            <button onclick="removeExpCard(${i})" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:18px;padding:4px 8px;" title="ลบ">🗑</button>
+          </div>
+        </div>
+
+        <div class="exp-edit-grid" style="margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ไอคอน (Emoji)</div>
+            <input class="form-input" value="${exp.icon||'🏢'}" oninput="editExpList[${i}].icon=this.value" placeholder="🏢">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ตำแหน่ง (Position)</div>
+            <input class="form-input" value="${exp.position||''}" oninput="editExpList[${i}].position=this.value" placeholder="IT-Support">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ชื่อบริษัท / องค์กร</div>
+            <input class="form-input" value="${exp.company||''}" oninput="editExpList[${i}].company=this.value" placeholder="บริษัท Dohome จำกัด">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">สาขา / ที่ตั้ง</div>
+            <input class="form-input" value="${exp.sub||''}" oninput="editExpList[${i}].sub=this.value" placeholder="สาขาบางนา · กรุงเทพมหานคร">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ช่วงเวลา</div>
+            <input class="form-input" value="${exp.period||''}" oninput="editExpList[${i}].period=this.value" placeholder="2566 – ปัจจุบัน">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ระยะเวลารวม</div>
+            <input class="form-input" value="${exp.duration||''}" oninput="editExpList[${i}].duration=this.value" placeholder="3 ปี">
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;">หน้าที่และความรับผิดชอบ</div>
+          <div class="exp-edit-duties" id="duties_${i}">
+            ${(exp.duties||['']).map((d,di)=>`
+              <div class="exp-edit-duty-row">
+                <input class="form-input" value="${d.replace(/"/g,'&quot;')}" oninput="editExpList[${i}].duties[${di}]=this.value" placeholder="หน้าที่/ความรับผิดชอบ...">
+                <button onclick="removeExpDuty(${i},${di})" title="ลบ">✕</button>
+              </div>`).join('')}
+          </div>
+          <button onclick="addExpDuty(${i})" style="margin-top:8px;padding:7px 16px;background:rgba(37,99,235,0.07);border:1px dashed rgba(37,99,235,0.25);border-radius:7px;font-family:'Prompt',sans-serif;font-size:12px;font-weight:600;color:var(--accent2);cursor:pointer;">+ เพิ่มหน้าที่</button>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;">ทักษะ / เทคโนโลยี (คั่นด้วย ,)</div>
+          <input class="form-input" value="${Array.isArray(exp.tags)?exp.tags.join(', '):(exp.tags||'')}" oninput="editExpList[${i}].tags=this.value.split(',').map(t=>t.trim()).filter(Boolean)" placeholder="Helpdesk, Network, CCTV, Active Directory">
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateExpHdr(i, type) {
+    const typeInfo = EXP_TYPES.find(t => t.val === type) || EXP_TYPES[1];
+    const hdrMap = { 'is-current':'hdr-current','is-past':'hdr-past','is-intern':'hdr-intern','is-corp':'hdr-corp' };
+    editExpList[i].hdrClass = hdrMap[type] || 'hdr-past';
+    const iconBgMap = {
+      'is-current':'linear-gradient(135deg,#dbeafe,#eff6ff)',
+      'is-past':'linear-gradient(135deg,#f9fafb,#f3f4f6)',
+      'is-intern':'linear-gradient(135deg,#f0fdf4,#bbf7d0)',
+      'is-corp':'linear-gradient(135deg,#fffbeb,#fef3c7)',
+    };
+    editExpList[i].iconBg = iconBgMap[type] || iconBgMap['is-past'];
+  }
+
+  function saveExpEdit() {
+    // validate
+    for (let i = 0; i < editExpList.length; i++) {
+      if (!editExpList[i].company.trim()) {
+        alert(`กรุณากรอกชื่อบริษัท/องค์กร (ประสบการณ์ที่ ${i+1})`); return;
+      }
+      if (!editExpList[i].position.trim()) {
+        alert(`กรุณากรอกตำแหน่ง (ประสบการณ์ที่ ${i+1})`); return;
+      }
+    }
+    // filter empty duties
+    editExpList.forEach(exp => {
+      exp.duties = (exp.duties || []).filter(d => d.trim());
+      if (!exp.duties.length) exp.duties = ['-'];
+    });
+
+    EXP_DATA.length = 0;
+    editExpList.forEach(e => EXP_DATA.push(e));
+    saveExpDataLocal(JSON.parse(JSON.stringify(EXP_DATA)));
+    renderExpCards();
+    closeExpEdit();
+
+    // flash button
+    const btn = document.getElementById('btnEditExp');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ บันทึกแล้ว';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  }
+
+  document.getElementById('expEditClose').onclick = closeExpEdit;
+  document.getElementById('expEditOverlay').onclick = e => {
+    if (e.target === document.getElementById('expEditOverlay')) closeExpEdit();
+  };
 </script>
 </body>
 </html>

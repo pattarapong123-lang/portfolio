@@ -43,9 +43,10 @@
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
+    will-change: auto;
   }
 
-  /* SCAN LINE OVERLAY */
+  /* SCAN LINE OVERLAY — disabled on mobile to prevent flicker */
   body::after {
     content: '';
     position: fixed; inset: 0;
@@ -59,10 +60,17 @@
     pointer-events: none;
     z-index: 0;
     animation: scanMove 8s linear infinite;
+    will-change: background-position;
   }
   @keyframes scanMove {
     0% { background-position: 0 0; }
     100% { background-position: 0 40px; }
+  }
+
+  /* ── MOBILE: ปิด animation ที่ทำให้กระพริบ ── */
+  @media (max-width: 768px) {
+    body::after { animation: none; content: none; }
+    body::before { background-attachment: scroll; }
   }
 
   /* CANVAS PARTICLES */
@@ -300,16 +308,20 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 110px; position: relative;
     box-shadow: 0 16px 60px rgba(37,99,235,0.15), 0 0 40px rgba(37,99,235,0.08);
+    will-change: transform;
+    transform: translateZ(0);
   }
   .avatar-circle::before {
     content: ''; position: absolute; inset: -10px; border-radius: 50%;
     border: 2px dashed rgba(37,99,235,0.2);
     animation: spin 24s linear infinite;
+    will-change: transform;
   }
   .avatar-circle::after {
     content: ''; position: absolute; inset: -22px; border-radius: 50%;
     border: 1px solid rgba(37,99,235,0.1);
     animation: spin 16s linear infinite reverse;
+    will-change: transform;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -321,6 +333,7 @@
     top: 50%; left: 50%;
     transform-origin: 0 0;
     animation: orbitAnim 6s linear infinite;
+    will-change: transform;
   }
   .orbit-dot:nth-child(2) { animation-duration: 9s; animation-delay: -3s; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
   .orbit-dot:nth-child(3) { animation-duration: 12s; animation-delay: -6s; background: #059669; box-shadow: 0 0 8px #059669; }
@@ -1320,28 +1333,188 @@
   .social-row    { animation: fadeUp 0.6s ease both 0.6s; }
   .hero-right    { animation: fadeUp 0.7s ease both 0.3s; }
 
-  @media(max-width:900px){
-    nav{padding:0 20px}
-    .nav-links{display:none}
-    .hero-wrap{padding:0 20px}
-    .hero{flex-direction:column;padding:80px 0 50px;text-align:center;align-items:center;gap:36px}
-    .hero-desc{margin:0 auto 28px}
-    .hero-btns,.social-row{justify-content:center}
-    .hero-right{flex:none}
-    .stats-bar{padding:36px 20px}
-    .stats-inner{grid-template-columns:repeat(2,1fr)}
-    .sec-wrap{padding:60px 20px}
-    footer{flex-direction:column;gap:12px;text-align:center;padding:24px}
-    .about-grid{grid-template-columns:1fr}
-    .profile-card{position:static}
-    .exp-card-grid{flex-direction:column}
-    .detail-img-grid{grid-template-columns:repeat(2,1fr)}
-    .exp-dm-img-grid{grid-template-columns:repeat(2,1fr)}
+  /* ══════════════════════════════════════════
+     RESPONSIVE — Tablet 900px
+  ══════════════════════════════════════════ */
+  @media (max-width: 900px) {
+    /* NAV */
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .nav-badge { display: none; }
+    #hamburgerBtn { display: flex !important; }
+
+    /* HERO */
+    .hero-wrap { padding: 0 20px; }
+    .hero {
+      flex-direction: column; padding: 80px 0 50px;
+      text-align: center; align-items: center; gap: 36px;
+    }
+    .hero-desc { margin: 0 auto 28px; }
+    .hero-btns, .social-row { justify-content: center; }
+    .hero-right { flex: none; }
+    .avatar-circle { width: 300px; height: 300px; font-size: 72px; }
+    @keyframes orbitAnim {
+      0%   { transform: rotate(0deg) translateX(162px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(162px) rotate(-360deg); }
+    }
+    .float-chip { font-size: 11px; padding: 7px 10px; }
+    .fc1 { top: 10px; left: -10px; }
+    .fc2 { bottom: 30px; right: -10px; }
+    .fc3 { display: none; }
+
+    /* STATS */
+    .stats-bar { padding: 36px 20px; }
+    .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+    /* SECTIONS */
+    .sec-wrap { padding: 60px 20px; }
+
+    /* ABOUT */
+    .about-grid { grid-template-columns: 1fr; }
+    .profile-card { position: static; }
+    .edu-row { flex-wrap: wrap; gap: 4px; }
+    .edu-row-th { flex: 0 0 100%; }
+    .edu-row-sep { display: none; }
+    .edu-row-en { flex: 0 0 100%; font-size: 12px; color: var(--muted); }
+
+    /* EXPERIENCE */
+    .exp-card-grid { padding-left: 36px; }
+    .exp-card { flex-direction: column; }
+    .exp-card-top { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+    .exp-card-center { justify-content: flex-start; }
+    .exp-card-footer {
+      border-left: none; border-top: 1px solid var(--border);
+      flex-direction: row; justify-content: space-between;
+      padding: 12px 16px; min-width: unset;
+    }
+    .exp-card-badge { position: static; }
+
+    /* IMAGE GRIDS */
+    .detail-img-grid { grid-template-columns: repeat(2, 1fr); }
+    .exp-dm-img-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* FOOTER */
+    footer {
+      flex-direction: column; gap: 12px;
+      text-align: center; padding: 24px;
+    }
   }
-  @media(max-width:600px){
-    .exp-card-grid{flex-direction:column}
-    .exp-dm-img-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* ══════════════════════════════════════════
+     RESPONSIVE — Mobile 600px
+  ══════════════════════════════════════════ */
+  @media (max-width: 600px) {
+    /* NAV */
+    nav { height: 56px; }
+    .nav-badge { font-size: 11px; padding: 4px 8px; }
+
+    /* HERO */
+    .hero { padding: 70px 0 40px; gap: 28px; }
+    .avatar-circle { width: 220px; height: 220px; font-size: 52px; }
+    .avatar-circle::before { inset: -8px; }
+    .avatar-circle::after  { inset: -16px; }
+    @keyframes orbitAnim {
+      0%   { transform: rotate(0deg) translateX(118px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(118px) rotate(-360deg); }
+    }
+    .orbit-dot { width: 6px; height: 6px; }
+    .float-chip { display: none; }
+    .hud-frame { display: none; }
+    .hero-greeting { font-size: 22px; }
+    .hero-name { font-size: 20px; }
+    .hero-role { font-size: 15px; }
+    .hero-desc { font-size: 14px; }
+    .btn-main, .btn-sec { padding: 11px 20px; font-size: 13px; }
+
+    /* STATS */
+    .stats-bar { padding: 28px 16px; }
+    .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-num { font-size: 30px; }
+    .stat-lbl { font-size: 10px; }
+
+    /* SECTIONS */
+    .sec-wrap { padding: 48px 16px; }
+    .sec-title { font-size: 18px; }
+
+    /* ABOUT */
+    .profile-avatar { width: 110px; height: 110px; font-size: 30px; }
+    .profile-card-top { padding: 24px 16px 16px; }
+    .profile-info-list { padding: 14px 16px; }
+    .edu-card { padding: 16px; gap: 12px; }
+    .edu-badge { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; }
+    .edu-school { font-size: 14px; }
+
+    /* SKILLS */
+    .skills-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .skill-card { padding: 16px; }
+    .sk-icon { height: 72px; font-size: 36px; }
+    .sk-name { font-size: 13px; }
+    .sk-desc { font-size: 12px; }
+
+    /* EXPERIENCE */
+    .exp-card-grid { padding-left: 28px; }
+    .exp-stats-bar { border-radius: 10px; }
+    .exp-stat-item { padding: 14px 8px; }
+    .exp-stat-num { font-size: 22px; }
+    .exp-stat-lbl { font-size: 9px; }
+    .exp-card-company { font-size: 14px; }
+    .exp-card-position { font-size: 14px; }
+    .exp-card-dur { font-size: 18px; }
+    .exp-dm-body { padding: 20px 16px 24px; }
+    .exp-dm-header { padding: 20px 16px 16px; }
+    .exp-dm-company { font-size: 17px; }
+
+    /* WORKS */
+    .work-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .detail-img-grid { grid-template-columns: 1fr 1fr; }
+    .exp-dm-img-grid { grid-template-columns: 1fr 1fr; }
+    .detail-body { padding: 18px 16px 24px; }
+    .detail-title { font-size: 17px; }
+    .cat-tabs { gap: 6px; }
+    .cat-tab { padding: 6px 10px; font-size: 10.5px; }
+
+    /* MODAL */
+    .modal { padding: 24px 18px; width: 95%; }
+    .modal-title { font-size: 17px; }
+    .hero-edit-modal { padding: 24px 18px; width: 95%; }
+
+    /* FAB */
+    .fab { width: 46px; height: 46px; font-size: 20px; bottom: 20px; right: 16px; }
   }
+
+  /* ══════════════════════════════════════════
+     RESPONSIVE — Small Mobile 400px
+  ══════════════════════════════════════════ */
+  @media (max-width: 400px) {
+    .stats-inner { grid-template-columns: repeat(2, 1fr); }
+    .skills-grid { grid-template-columns: 1fr 1fr; }
+    .work-grid   { grid-template-columns: 1fr; }
+    .avatar-circle { width: 180px; height: 180px; font-size: 44px; }
+    @keyframes orbitAnim {
+      0%   { transform: rotate(0deg) translateX(96px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(96px) rotate(-360deg); }
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     REDUCE MOTION — ลด animation บนมือถือ
+  ══════════════════════════════════════════ */
+  @media (prefers-reduced-motion: reduce), (max-width: 768px) {
+    .avatar-circle::before,
+    .avatar-circle::after,
+    .orbit-dot,
+    .prog-bar { animation-duration: 0.01ms !important; }
+  }
+
+  /* ── HAMBURGER ── */
+  .ham-bar {
+    display: block; width: 22px; height: 2px;
+    background: var(--primary); border-radius: 2px;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+  #hamburgerBtn.open .ham-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  #hamburgerBtn.open .ham-bar:nth-child(2) { opacity: 0; }
+  #hamburgerBtn.open .ham-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   /* ── SKILL MODAL ── */
   .skill-card { cursor: pointer; }
@@ -1618,16 +1791,30 @@
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-brand">Pattarapong Tensuna</a>
-  <ul class="nav-links">
-    <li><a href="#" class="active">Home</a></li>
-    <li><a href="#about">About</a></li>
-    <li><a href="#skills">Skills</a></li>
-    <li><a href="#experience">Experience</a></li>
-    <li><a href="#works">Portfolio</a></li>
-    <li><a href="#" id="loginNavBtn" onclick="openLoginModal(); return false;">Login</a></li>
-    <li style="display:none" id="logoutNavItem"><a href="#" id="logoutNavBtn" onclick="logoutAdmin(); return false;" style="color:#ef4444;">Logout 🔒</a></li>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#" class="active" onclick="closeNav()">Home</a></li>
+    <li><a href="#about" onclick="closeNav()">About</a></li>
+    <li><a href="#skills" onclick="closeNav()">Skills</a></li>
+    <li><a href="#experience" onclick="closeNav()">Experience</a></li>
+    <li><a href="#works" onclick="closeNav()">Portfolio</a></li>
+    <li><a href="#" id="loginNavBtn" onclick="openLoginModal(); closeNav(); return false;">Login</a></li>
+    <li style="display:none" id="logoutNavItem"><a href="#" id="logoutNavBtn" onclick="logoutAdmin(); closeNav(); return false;" style="color:#ef4444;">Logout 🔒</a></li>
   </ul>
+  <button id="hamburgerBtn" onclick="toggleNav()" aria-label="เมนู" style="display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:5px;align-items:center;justify-content:center;">
+    <span class="ham-bar"></span>
+    <span class="ham-bar"></span>
+    <span class="ham-bar"></span>
+  </button>
 </nav>
+<!-- NAV MOBILE DRAWER -->
+<div id="navDrawer" style="display:none;position:fixed;top:56px;left:0;right:0;background:rgba(247,248,252,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:99;padding:8px 0 16px;flex-direction:column;">
+  <a href="#"            onclick="closeNav()" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--primary);text-decoration:none;border-left:3px solid var(--accent2);">🏠 Home</a>
+  <a href="#about"       onclick="closeNav()" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--text);text-decoration:none;border-left:3px solid transparent;">👤 About</a>
+  <a href="#skills"      onclick="closeNav()" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--text);text-decoration:none;border-left:3px solid transparent;">🛠️ Skills</a>
+  <a href="#experience"  onclick="closeNav()" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--text);text-decoration:none;border-left:3px solid transparent;">💼 Experience</a>
+  <a href="#works"       onclick="closeNav()" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--text);text-decoration:none;border-left:3px solid transparent;">📁 Portfolio</a>
+  <a href="#" id="loginDrawerBtn" onclick="openLoginModal(); closeNav(); return false;" style="display:block;padding:13px 24px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--accent2);text-decoration:none;border-left:3px solid transparent;">🔐 Login</a>
+</div>
 
 <!-- HERO -->
 <div class="hero-wrap">
@@ -3279,6 +3466,27 @@
 
 <script>
   // ── AUTH ──
+
+  function toggleNav() {
+    const btn = document.getElementById('hamburgerBtn');
+    const drawer = document.getElementById('navDrawer');
+    const isOpen = btn.classList.toggle('open');
+    drawer.style.display = isOpen ? 'flex' : 'none';
+  }
+
+  function closeNav() {
+    document.getElementById('hamburgerBtn').classList.remove('open');
+    document.getElementById('navDrawer').style.display = 'none';
+  }
+
+  // ปิด drawer เมื่อคลิกนอกพื้นที่
+  document.addEventListener('click', function(e) {
+    const btn = document.getElementById('hamburgerBtn');
+    const drawer = document.getElementById('navDrawer');
+    if (!btn.contains(e.target) && !drawer.contains(e.target)) {
+      closeNav();
+    }
+  });
 
   function openLoginModal() {
     document.getElementById('loginUser').value = '';

@@ -632,6 +632,13 @@
     border-color: rgba(37,99,235,0.25); transform: translateY(-3px);
   }
   .skill-card:hover::after { border-color: transparent rgba(37,99,235,0.3) transparent transparent; }
+
+  @media (max-width: 900px) {
+    .skill-card { transition: none !important; }
+    .skill-card:hover { transform: none !important; box-shadow: none !important; border-color: var(--border) !important; }
+    .skill-card::before { transition: none !important; }
+    .skill-card::after { transition: none !important; }
+  }
   .sk-icon {
     width: 100%; height: 100px;
     background: linear-gradient(135deg,#dbeafe,#eff6ff);
@@ -1055,10 +1062,10 @@
   .news-card.animate-in { animation: cardIn 0.3s ease both; }
   .news-card:hover { transform: translateY(-5px); box-shadow: 0 14px 40px rgba(26,58,107,0.13); }
 
-  /* Mobile: ปิด hover transform และ cardIn animation ทั้งหมด */
+  /* Mobile: ปิด hover transform, transition และ cardIn animation ทั้งหมด */
   @media (max-width: 900px) {
-    .news-card, .news-card.animate-in { animation: none !important; }
-    .news-card:hover { transform: none; box-shadow: 0 2px 12px rgba(26,58,107,0.06); }
+    .news-card, .news-card.animate-in { animation: none !important; transition: none !important; }
+    .news-card:hover { transform: none !important; box-shadow: 0 2px 12px rgba(26,58,107,0.06) !important; }
   }
 
   .news-card-img {
@@ -2836,7 +2843,10 @@
       sec.style.display = 'none';
     }
 
-    document.getElementById('detailOverlay').classList.add('open');
+    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
+    requestAnimationFrame(() => {
+      document.getElementById('detailOverlay').classList.add('open');
+    });
   }
 
   // Lightbox
@@ -3347,7 +3357,10 @@
       iconImg.style.display = 'none';
     }
 
-    document.getElementById('skillModalOverlay').classList.add('open');
+    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
+    requestAnimationFrame(() => {
+      document.getElementById('skillModalOverlay').classList.add('open');
+    });
   }
 
   document.getElementById('skillModalClose').onclick = () => document.getElementById('skillModalOverlay').classList.remove('open');

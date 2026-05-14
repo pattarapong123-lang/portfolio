@@ -1023,10 +1023,10 @@
   .works-count span { color: var(--accent2); font-weight: 700; }
 
   /* NEWS CARD GRID */
-  .work-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:22px; }
+  .work-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:22px; contain: layout style; }
 
   @keyframes cardIn {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
@@ -1040,18 +1040,29 @@
     transition: transform 0.22s, box-shadow 0.22s;
     display: flex; flex-direction: column;
     position: relative;
-    animation: cardIn 0.35s ease both;
+    contain: layout style paint;
+    /* animation จะใส่ผ่าน JS เฉพาะ load ครั้งแรก */
   }
+  .news-card.animate-in { animation: cardIn 0.3s ease both; }
   .news-card:hover { transform: translateY(-5px); box-shadow: 0 14px 40px rgba(26,58,107,0.13); }
+
+  /* Mobile: ปิด hover transform และ cardIn animation ทั้งหมด */
+  @media (max-width: 900px) {
+    .news-card, .news-card.animate-in { animation: none !important; }
+    .news-card:hover { transform: none; box-shadow: 0 2px 12px rgba(26,58,107,0.06); }
+  }
 
   .news-card-img {
     width: 100%; aspect-ratio: 4/3; object-fit: cover;
     background: #e5e7eb; display: block; flex-shrink: 0;
+    /* กัน reflow ขณะโหลดรูป */
+    min-height: 140px;
   }
   .news-card-img-placeholder {
     width: 100%; aspect-ratio: 4/3;
     display: flex; align-items: center; justify-content: center;
     font-size: 52px; flex-shrink: 0;
+    min-height: 140px;
   }
   .news-card-body { padding: 13px 15px 16px; flex: 1; display: flex; flex-direction: column; }
   .news-card-date {
@@ -1795,6 +1806,10 @@
     .exp-card                              { animation: none !important; }
     .live-dot                              { animation: none; }
     .prog-bar::after                       { animation: none; }
+    /* Works/Project cards — ปิด animation และ transition ทั้งหมด */
+    .news-card, .news-card.animate-in      { animation: none !important; transition: none !important; }
+    .news-card:hover                       { transform: none !important; box-shadow: 0 2px 12px rgba(26,58,107,0.06) !important; }
+    .work-grid                             { contain: strict; }
     /* ปิด backdrop-filter บน element ที่ไม่จำเป็น เพราะกิน GPU มาก */
     .m-overlay                             { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.55); }
     /* ทุก section ให้ contain layout เพื่อลด reflow */
@@ -2731,13 +2746,17 @@
       g.innerHTML = `<div class="empty-state"><div class="empty-icon">${activeCat==='all'?'📂':CATS[activeCat]?.icon||'📂'}</div><p>ยังไม่มีผลงานในหมวดนี้ — กดปุ่ม <b>+</b> เพื่อเพิ่มผลงาน</p></div>`;
       return;
     }
+    const isMob = window.innerWidth <= 900;
     g.innerHTML = filtered.map((w, i) => {
       const c = CATS[w.cat] || { icon:'⚙️', ncClass:'nc-other', placeholderBg:'#f3f4f6', label:w.cat };
       const imgHtml = w.img
-        ? `<img class="news-card-img" src="${w.img}" alt="${w.title}" loading="lazy">`
+        ? `<img class="news-card-img" src="${w.img}" alt="${w.title}" loading="lazy" decoding="async">`
         : `<div class="news-card-img-placeholder" style="background:${c.placeholderBg}">${c.icon}</div>`;
+      // animate-in เฉพาะ desktop และเฉพาะ 6 การ์ดแรก
+      const animClass = (!isMob && i < 6) ? ' animate-in' : '';
+      const animStyle = (!isMob && i < 6) ? ` style="animation-delay:${i*0.05}s"` : '';
       return `
-      <div class="news-card" style="animation-delay:${i*0.04}s" onclick="openDetail(${w.id})">
+      <div class="news-card${animClass}"${animStyle} onclick="openDetail(${w.id})">
         ${imgHtml}
         <div class="news-card-body">
           <div class="news-card-date">${fmtDate(w.date)}</div>
@@ -2996,7 +3015,7 @@
     }
   };
 
-  loadAll(); // โหลด works + skills พร้อมกัน
+  loadWorks();
 
 </script>
 
@@ -3362,7 +3381,7 @@
     this.value = '';
   });
 
-  // loadSkillsFromDB ถูกเรียกแล้วจาก loadAll() ด้านบน
+  loadSkillsFromDB();
 </script>
 
 

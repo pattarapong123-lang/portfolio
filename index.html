@@ -704,7 +704,6 @@
     cursor: pointer;
     transition: transform 0.22s, box-shadow 0.22s;
     position: relative;
-    animation: cardIn 0.35s ease both;
     display: flex; flex-direction: row;
     margin-bottom: 16px;
   }
@@ -725,13 +724,17 @@
   .exp-card.is-current::before {
     background: #2563eb;
     box-shadow: 0 0 0 5px rgba(37,99,235,0.18), 0 0 16px rgba(37,99,235,0.5);
-    animation: activePulse 2s ease-in-out infinite;
   }
   .exp-card.is-corp::before    { border-color: #d97706; }
   .exp-card.is-past::before    { border-color: #9ca3af; }
   .exp-card.is-intern::before  { border-color: #059669; }
 
   .exp-card:hover { transform: translateX(6px); box-shadow: 0 10px 40px rgba(26,58,107,0.13); }
+
+  @media (max-width: 900px) {
+    .exp-card:hover { transform: none !important; box-shadow: none !important; }
+    .exp-card { transition: none !important; }
+  }
 
   .exp-card-top {
     padding: 14px 24px 14px;
@@ -1031,7 +1034,7 @@
   .works-count span { color: var(--accent2); font-weight: 700; }
 
   /* NEWS CARD GRID */
-  .work-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:22px; contain: layout style; }
+  .work-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:22px; }
 
   @keyframes cardIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -1048,8 +1051,6 @@
     transition: transform 0.22s, box-shadow 0.22s;
     display: flex; flex-direction: column;
     position: relative;
-    contain: layout style paint;
-    /* animation จะใส่ผ่าน JS เฉพาะ load ครั้งแรก */
   }
   .news-card.animate-in { animation: cardIn 0.3s ease both; }
   .news-card:hover { transform: translateY(-5px); box-shadow: 0 14px 40px rgba(26,58,107,0.13); }
@@ -1824,7 +1825,6 @@
     /* Works/Project cards — ปิด animation และ transition ทั้งหมด */
     .news-card, .news-card.animate-in      { animation: none !important; transition: none !important; }
     .news-card:hover                       { transform: none !important; box-shadow: 0 2px 12px rgba(26,58,107,0.06) !important; }
-    .work-grid                             { contain: strict; }
     /* ปิด backdrop-filter ทุกที่บน mobile เพราะกิน GPU และทำให้กระพริบ */
     .m-overlay                             { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.55); }
     .skill-modal-overlay                   { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15,23,42,0.7); }
@@ -2641,7 +2641,10 @@
     document.getElementById('expDmList').innerHTML = d.duties.map(t => `<li>${t}</li>`).join('');
     document.getElementById('expDmTags').innerHTML = d.tags.map(t => `<span class="tag">${t}</span>`).join('');
     renderExpImgGrid(idx);
-    document.getElementById('expDetailOverlay').classList.add('open');
+    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
+    requestAnimationFrame(() => {
+      document.getElementById('expDetailOverlay').classList.add('open');
+    });
   }
 
   document.getElementById('expDetailClose').onclick = () =>

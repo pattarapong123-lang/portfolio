@@ -2,10 +2,17 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a3a6b">
 <title>IT Support Portfolio — Dohome</title>
+<!-- DNS prefetch สำหรับ Supabase -->
+<link rel="dns-prefetch" href="https://aftnbucohvfmhmxvsmjh.supabase.co">
+<link rel="preconnect" href="https://aftnbucohvfmhmxvsmjh.supabase.co" crossorigin>
+<!-- Fonts — preconnect ก่อน แล้วโหลด async -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"></noscript>
 <style>
   :root {
     --primary: #1a3a6b;
@@ -33,7 +40,7 @@
     overflow-x: hidden;
   }
 
-  /* TECH GRID BACKGROUND */
+  /* TECH GRID BACKGROUND — GPU layer แยก ไม่ repaint กับ scroll */
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -43,10 +50,11 @@
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
-    will-change: auto;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
-  /* SCAN LINE OVERLAY — disabled on mobile to prevent flicker */
+  /* SCAN LINE — Desktop only */
   body::after {
     content: '';
     position: fixed; inset: 0;
@@ -54,23 +62,23 @@
       0deg,
       transparent,
       transparent 3px,
-      rgba(37,99,235,0.012) 3px,
-      rgba(37,99,235,0.012) 4px
+      rgba(37,99,235,0.010) 3px,
+      rgba(37,99,235,0.010) 4px
     );
     pointer-events: none;
     z-index: 0;
-    animation: scanMove 8s linear infinite;
-    will-change: background-position;
+    animation: scanMove 10s linear infinite;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   @keyframes scanMove {
-    0% { background-position: 0 0; }
+    0%   { background-position: 0 0; }
     100% { background-position: 0 40px; }
   }
 
-  /* ── MOBILE: ปิด animation ที่ทำให้กระพริบ ── */
-  @media (max-width: 768px) {
-    body::after { animation: none; content: none; }
-    body::before { background-attachment: scroll; }
+  /* ── MOBILE: ปิดทุก overlay animation ── */
+  @media (max-width: 900px) {
+    body::after  { content: none !important; animation: none !important; }
   }
 
   /* CANVAS PARTICLES */
@@ -83,14 +91,16 @@
   /* NAV */
   nav {
     position: fixed; top: 0; left: 0; right: 0;
-    will-change: transform;
-    background: rgba(247,248,252,0.92);
-    backdrop-filter: blur(12px);
+    transform: translateZ(0);
+    background: rgba(247,248,252,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     z-index: 100;
     padding: 0 60px;
     height: 64px;
     display: flex; align-items: center; justify-content: space-between;
+    contain: layout style;
   }
   nav::after {
     content: '';
@@ -385,6 +395,9 @@
   @keyframes scanline {
     0%,100% { opacity: 0.4; }
     50% { opacity: 1; }
+  }
+  @media (max-width: 900px) {
+    .stats-bar::after { animation: none; opacity: 0.6; }
   }
   .stats-inner {
     max-width: 1200px; margin: 0 auto; position: relative;
@@ -1769,14 +1782,23 @@
   .typed-add-row button:hover { background: #1d4ed8; }
   #heroEditBtn:hover { background: #14306b !important; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,58,107,0.3) !important; }
 
-  @media (max-width: 768px) {
-    body::after { animation: none !important; }
-    .orbit-dot { animation: none !important; display: none; }
-    .avatar-circle::before, .avatar-circle::after { animation: none !important; }
-    .hero-name .hl::before, .hero-name .hl::after { display: none !important; }
-    .float-chip { animation: none !important; }
-    #particleCanvas { display: none !important; }
-    .exp-card { animation: none !important; }
+  @media (max-width: 900px) {
+    /* ปิดทุก animation ที่ทำให้กระพริบขณะ scroll */
+    body::after                            { content: none !important; animation: none !important; }
+    .orbit-dot                             { animation: none !important; display: none !important; }
+    .avatar-circle::before,
+    .avatar-circle::after                  { animation: none !important; }
+    .hero-name .hl::before,
+    .hero-name .hl::after                  { display: none !important; }
+    .float-chip                            { animation: none !important; }
+    #particleCanvas                        { display: none !important; }
+    .exp-card                              { animation: none !important; }
+    .live-dot                              { animation: none; }
+    .prog-bar::after                       { animation: none; }
+    /* ปิด backdrop-filter บน element ที่ไม่จำเป็น เพราะกิน GPU มาก */
+    .m-overlay                             { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.55); }
+    /* ทุก section ให้ contain layout เพื่อลด reflow */
+    section                                { contain: layout style; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -2602,10 +2624,25 @@
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmdG5idWNvaHZmbWhteHZzbWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzQ0NjcsImV4cCI6MjA5NDMxMDQ2N30.Iq3_Dyg4Ly3pJ6UfBY7-UM_ks-vwkUGNfNLTT3dIGs8';
   const SB_HDR = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
 
+  // ── SIMPLE IN-MEMORY CACHE (หมดอายุ 5 นาที) ──
+  const _cache = {};
   async function sbFetch(path, opts={}) {
+    const isGET = !opts.method || opts.method === 'GET';
+    const cacheKey = path;
+    const now = Date.now();
+    // คืน cache ถ้าเป็น GET และยังไม่หมดอายุ
+    if (isGET && _cache[cacheKey] && (now - _cache[cacheKey].ts) < 5 * 60 * 1000) {
+      return _cache[cacheKey].data;
+    }
     const res = await fetch(SB_URL + path, { headers: SB_HDR, ...opts });
     if (!res.ok) { const e = await res.json().catch(()=>({message:res.statusText})); throw new Error(e.message||res.statusText); }
-    return res.status === 204 ? null : res.json();
+    const data = res.status === 204 ? null : await res.json();
+    if (isGET) _cache[cacheKey] = { data, ts: now };
+    return data;
+  }
+  // ล้าง cache key ที่เกี่ยวข้องหลัง write
+  function invalidateCache(prefix) {
+    Object.keys(_cache).forEach(k => { if (k.startsWith(prefix)) delete _cache[k]; });
   }
 
   // Upload file to Supabase Storage, return public URL
@@ -2623,6 +2660,11 @@
 
   let activeCat = 'all';
   let works = [];
+
+  // โหลด works และ skills พร้อมกัน (parallel)
+  async function loadAll() {
+    await Promise.all([loadWorks(), loadSkillsFromDB()]);
+  }
 
   // Load all works from Supabase
   async function loadWorks() {
@@ -2657,10 +2699,12 @@
       await sbFetch('/rest/v1/works', { method: 'POST', body: JSON.stringify(row),
         headers: { ...SB_HDR, 'Prefer': 'return=representation' } });
     }
+    invalidateCache('/rest/v1/works');
   }
 
   async function deleteWorkFromDB(id) {
     await sbFetch('/rest/v1/works?id=eq.' + id, { method: 'DELETE' });
+    invalidateCache('/rest/v1/works');
   }
 
   function fmtDate(d) {
@@ -2952,7 +2996,7 @@
     }
   };
 
-  loadWorks();
+  loadAll(); // โหลด works + skills พร้อมกัน
 
 </script>
 
@@ -3103,14 +3147,17 @@
       await sbFetch('/rest/v1/skills', { method: 'POST', body: JSON.stringify(row),
         headers: { ...SB_HDR, 'Prefer': 'return=representation' } });
     }
+    invalidateCache('/rest/v1/skills');
   }
 
   async function deleteSkillFromDB(id) {
     await sbFetch('/rest/v1/skills?id=eq.' + id, { method: 'DELETE' });
+    invalidateCache('/rest/v1/skills');
   }
 
   async function updateSkillImgInDB(id, imgUrl) {
     await sbFetch('/rest/v1/skills?id=eq.' + id, { method: 'PATCH', body: JSON.stringify({ img: imgUrl }) });
+    invalidateCache('/rest/v1/skills');
   }
 
   function renderSkills() {
@@ -3315,7 +3362,7 @@
     this.value = '';
   });
 
-  loadSkillsFromDB();
+  // loadSkillsFromDB ถูกเรียกแล้วจาก loadAll() ด้านบน
 </script>
 
 

@@ -2713,16 +2713,35 @@
   // ── SIMPLE IN-MEMORY CACHE (หมดอายุ 5 นาที) ──
   const _cache = {};
   async function sbFetch(path, opts={}) {
-    const isGET = !opts.method || opts.method === 'GET';
+    const method = (opts.method || 'GET').toUpperCase();
+    const isGET = method === 'GET';
     const cacheKey = path;
     const now = Date.now();
-    // คืน cache ถ้าเป็น GET และยังไม่หมดอายุ
     if (isGET && _cache[cacheKey] && (now - _cache[cacheKey].ts) < 5 * 60 * 1000) {
       return _cache[cacheKey].data;
     }
-    const res = await fetch(SB_URL + path, { headers: SB_HDR, ...opts });
-    if (!res.ok) { const e = await res.json().catch(()=>({message:res.statusText})); throw new Error(e.message||res.statusText); }
-    const data = res.status === 204 ? null : await res.json();
+
+    // สร้าง headers ใหม่ทุกครั้ง รวม SB_HDR + Prefer สำหรับ PATCH
+    const baseHeaders = { ...SB_HDR };
+    if (method === 'PATCH' || method === 'DELETE') {
+      baseHeaders['Prefer'] = 'return=minimal';
+    }
+
+    const fetchOpts = {
+      method,
+      headers: { ...baseHeaders, ...(opts.headers || {}) },
+    };
+    if (opts.body) fetchOpts.body = opts.body;
+
+    const res = await fetch(SB_URL + path, fetchOpts);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      let errMsg = errText;
+      try { errMsg = JSON.parse(errText).message || errText; } catch {}
+      console.error('sbFetch error', method, path, res.status, errMsg);
+      throw new Error(`[${res.status}] ${errMsg}`);
+    }
+    const data = (res.status === 204 || res.status === 200 && method !== 'GET') ? null : await res.json().catch(() => null);
     if (isGET) _cache[cacheKey] = { data, ts: now };
     return data;
   }
@@ -2777,13 +2796,25 @@
   }
 
   async function saveWorkToDB(payload, editId) {
-    const row = { title: payload.title, cat: payload.cat, description: payload.desc,
-                  tools: payload.tools, date: payload.date, img: payload.img, images: payload.images };
-    if (editId) {
+    const row = {
+      title: payload.title,
+      cat: payload.cat,
+      description: payload.desc,
+      tools: payload.tools,
+      date: payload.date || null,
+      img: payload.img || null,
+      images: payload.images || []
+    };
+    if (editId !== null && editId !== undefined && editId !== '') {
+      // PATCH — แก้ไข record ที่มีอยู่
       await sbFetch('/rest/v1/works?id=eq.' + editId, { method: 'PATCH', body: JSON.stringify(row) });
     } else {
-      await sbFetch('/rest/v1/works', { method: 'POST', body: JSON.stringify(row),
-        headers: { ...SB_HDR, 'Prefer': 'return=representation' } });
+      // POST — เพิ่ม record ใหม่
+      await sbFetch('/rest/v1/works', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(row)
+      });
     }
     invalidateCache('/rest/v1/works');
   }
@@ -3210,35 +3241,54 @@
   ];
 
   let skillsData = [...defaultSkillsData];
+  let _skillsFromDB = false; // track ว่าโหลดจาก DB จริงไหม
 
   async function loadSkillsFromDB() {
     try {
       const data = await sbFetch('/rest/v1/skills?select=*&order=sort_order.asc,created_at.asc');
       if (data && data.length > 0) {
+        _skillsFromDB = true;
         skillsData = data.map(s => ({
           id: s.id, icon: s.icon || '⚙️', img: s.img || null,
           name: s.name, pct: s.pct || 0,
           desc: s.description || '', tags: Array.isArray(s.tags) ? s.tags : []
         }));
       } else {
-        skillsData = [...defaultSkillsData];
+        // DB ว่าง — ใช้ default แต่ id ต้องเป็น null เพื่อให้ Edit = INSERT ใหม่
+        _skillsFromDB = false;
+        skillsData = defaultSkillsData.map(s => ({ ...s, id: null }));
       }
     } catch(e) {
       console.warn('loadSkillsFromDB:', e);
-      skillsData = [...defaultSkillsData];
+      _skillsFromDB = false;
+      skillsData = defaultSkillsData.map(s => ({ ...s, id: null }));
     }
     renderSkills();
   }
 
   async function saveSkillToDB(skill, editId) {
-    const row = { name: skill.name, icon: skill.icon, img: skill.img,
-                  pct: skill.pct, description: skill.desc, tags: skill.tags,
-                  sort_order: editId ? undefined : (skillsData.length) };
-    if (editId) {
-      await sbFetch('/rest/v1/skills?id=eq.' + editId, { method: 'PATCH', body: JSON.stringify(row) });
+    const row = {
+      name: skill.name,
+      icon: skill.icon,
+      img: skill.img || null,
+      pct: skill.pct,
+      description: skill.desc,
+      tags: skill.tags,
+    };
+    if (editId !== null && editId !== undefined) {
+      // PATCH — แก้ไข record ที่มีอยู่
+      await sbFetch('/rest/v1/skills?id=eq.' + editId, {
+        method: 'PATCH',
+        body: JSON.stringify(row)
+      });
     } else {
-      await sbFetch('/rest/v1/skills', { method: 'POST', body: JSON.stringify(row),
-        headers: { ...SB_HDR, 'Prefer': 'return=representation' } });
+      // POST — เพิ่ม record ใหม่
+      row.sort_order = skillsData.length;
+      await sbFetch('/rest/v1/skills', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(row)
+      });
     }
     invalidateCache('/rest/v1/skills');
   }
@@ -3261,25 +3311,30 @@
       </div>`;
       return;
     }
-    grid.innerHTML = skillsData.map(s => {
+    grid.innerHTML = skillsData.map((s, idx) => {
+      const cardId = s.id !== null && s.id !== undefined ? s.id : ('_def_' + idx);
       const iconHtml = s.img
         ? `<img src="${s.img}" style="width:100%;height:100%;object-fit:cover;border-radius:0;">`
         : `<span style="font-size:48px;">${s.icon || '⚙️'}</span>`;
       return `
-        <div class="skill-card" onclick="openSkillModal(${s.id})">
+        <div class="skill-card" onclick="openSkillModal(${JSON.stringify(s.id)})">
           ${isAdmin ? `<div class="skill-card-actions">
-            <button class="sk-action-btn sk-edit-btn" title="แก้ไข" onclick="event.stopPropagation();openSkillEdit(${s.id})">✏️</button>
-            <button class="sk-action-btn sk-del-btn" title="ลบ" onclick="event.stopPropagation();deleteSkill(${s.id})">🗑️</button>
+            <button class="sk-action-btn sk-edit-btn" title="แก้ไข" onclick="event.stopPropagation();openSkillEdit(${JSON.stringify(s.id)})">✏️</button>
+            <button class="sk-action-btn sk-del-btn" title="ลบ" onclick="event.stopPropagation();deleteSkill(${JSON.stringify(s.id)})">🗑️</button>
           </div>` : ''}
           <div class="sk-icon">${iconHtml}</div>
           <div class="sk-name">${s.name}</div>
-          <div class="sk-desc">${s.desc.substring(0,60)}...</div>
+          <div class="sk-desc">${(s.desc||'').substring(0,60)}...</div>
         </div>`;
     }).join('');
   }
 
   // ── DELETE SKILL ──
   async function deleteSkill(id) {
+    if (id === null || id === undefined) {
+      alert('ทักษะนี้ยังไม่ได้บันทึกในฐานข้อมูล ไม่สามารถลบได้');
+      return;
+    }
     const s = skillsData.find(x => x.id === id);
     if (!s) return;
     if (!confirm(`ลบทักษะ "${s.name}" ?`)) return;
@@ -3308,18 +3363,20 @@
   }
 
   function openSkillEdit(id) {
-    const s = skillsData.find(x => x.id === id);
+    // id อาจเป็น number (จาก DB) หรือ null (default skill ที่ยังไม่ได้บันทึก)
+    const s = id !== null ? skillsData.find(x => x.id === id) : skillsData.find(x => x.id === null || x.id === id);
     if (!s) return;
     const existingImg = s.img || '';
     _pendingSkillImgFile = null;
-    document.getElementById('skillEditTitle').textContent = '✏️ แก้ไขทักษะ';
-    document.getElementById('skillEditId').value = id;
+    document.getElementById('skillEditTitle').textContent = s.id !== null ? '✏️ แก้ไขทักษะ' : '➕ บันทึกทักษะ (ใหม่)';
+    // ถ้า id เป็น null ให้ส่งค่าว่าง → จะ INSERT ใหม่
+    document.getElementById('skillEditId').value = (s.id !== null && s.id !== undefined) ? s.id : '';
     document.getElementById('seIcon').value = s.icon || '';
     document.getElementById('seImgData').value = existingImg;
     document.getElementById('seName').value = s.name;
     document.getElementById('sePct').value = s.pct;
     document.getElementById('seDesc').value = s.desc;
-    document.getElementById('seTags').value = s.tags.join(', ');
+    document.getElementById('seTags').value = Array.isArray(s.tags) ? s.tags.join(', ') : '';
     if (existingImg) { setSeImgPreview(existingImg); } else { resetSeImg(); }
     seOverlay.classList.add('open');
     document.getElementById('skillModalOverlay').classList.remove('open');
@@ -3357,7 +3414,8 @@
 
       const skill = { name, icon, img: imgUrl, pct, desc, tags };
       const editId = editIdStr !== '' ? parseInt(editIdStr) : null;
-      await saveSkillToDB(skill, editId);
+      // ตรวจสอบด้วย !== null แทน if(editId) เพราะ id=0 เป็น falsy
+      await saveSkillToDB(skill, editId !== null ? editId : null);
       closeSkillEdit();
       await loadSkillsFromDB();
     } catch(e) {
@@ -3371,7 +3429,7 @@
   let currentSkillId = null;
 
   function openSkillModal(id) {
-    const s = skillsData.find(x => x.id === id);
+    const s = id !== null ? skillsData.find(x => x.id === id) : skillsData.find(x => x.id === null);
     if (!s) return;
     currentSkillId = id;
 

@@ -75,6 +75,7 @@
   /* NAV */
   nav {
     position: fixed; top: 0; left: 0; right: 0;
+    will-change: transform;
     background: rgba(247,248,252,0.92);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
@@ -1594,6 +1595,19 @@
   }
   .typed-add-row button:hover { background: #1d4ed8; }
   #heroEditBtn:hover { background: #14306b !important; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,58,107,0.3) !important; }
+
+  @media (max-width: 768px) {
+    body::after { animation: none !important; }
+    .orbit-dot { animation: none !important; display: none; }
+    .avatar-circle::before, .avatar-circle::after { animation: none !important; }
+    .hero-name .hl::before, .hero-name .hl::after { display: none !important; }
+    .float-chip { animation: none !important; }
+    #particleCanvas { display: none !important; }
+    .exp-card { animation: none !important; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
 </style>
 </head>
 <body>
@@ -2162,7 +2176,10 @@
     }
   }
 
-  for (let i = 0; i < 60; i++) particles.push(new Particle());
+  const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
+  const particleCount = isMobile ? 0 : 60;
+  for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+  if (isMobile) document.getElementById('particleCanvas').style.display = 'none';
 
   function drawParticles() {
     ctx.clearRect(0, 0, W, H);
@@ -2185,7 +2202,7 @@
     }
     requestAnimationFrame(drawParticles);
   }
-  drawParticles();
+  if (!isMobile) drawParticles();
 
   // ── TYPED TEXT ──
   let roles = ['Computer Support 💻','Printer Support 🖨️','IT Helpdesk 🛠️','Network Support 🌐'];

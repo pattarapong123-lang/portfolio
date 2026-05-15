@@ -30,7 +30,7 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 
   body {
     font-family: 'Sarabun', sans-serif;
@@ -38,6 +38,8 @@
     color: var(--text);
     font-weight: 400;
     overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* TECH GRID BACKGROUND — GPU layer แยก ไม่ repaint กับ scroll */
@@ -634,6 +636,7 @@
   .skill-card:hover::after { border-color: transparent rgba(37,99,235,0.3) transparent transparent; }
 
   @media (max-width: 900px) {
+    .prog-bar::after { animation: none !important; display: none; }
     .skill-card { transition: none !important; }
     .skill-card:hover { transform: none !important; box-shadow: none !important; border-color: var(--border) !important; }
     .skill-card::before { transition: none !important; }
@@ -1055,6 +1058,9 @@
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @media (max-width: 900px) {
+    .news-card.animate-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
 
   /* NEWS CARD */
   .news-card {
@@ -1377,15 +1383,17 @@
 
   /* ANIMS */
   @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-  .hero-greeting { animation: fadeUp 0.6s ease both 0.1s; }
-  .hero-name     { animation: fadeUp 0.6s ease both 0.2s; }
-  .hero-role     { animation: fadeUp 0.6s ease both 0.3s; }
-  .hero-company  { animation: fadeUp 0.6s ease both 0.32s; }
-  .hero-available{ animation: fadeUp 0.6s ease both 0.35s; }
-  .hero-desc     { animation: fadeUp 0.6s ease both 0.4s; }
-  .hero-btns     { animation: fadeUp 0.6s ease both 0.5s; }
-  .social-row    { animation: fadeUp 0.6s ease both 0.6s; }
-  .hero-right    { animation: fadeUp 0.7s ease both 0.3s; }
+  @media (min-width: 901px) {
+    .hero-greeting { animation: fadeUp 0.6s ease both 0.1s; }
+    .hero-name     { animation: fadeUp 0.6s ease both 0.2s; }
+    .hero-role     { animation: fadeUp 0.6s ease both 0.3s; }
+    .hero-company  { animation: fadeUp 0.6s ease both 0.32s; }
+    .hero-available{ animation: fadeUp 0.6s ease both 0.35s; }
+    .hero-desc     { animation: fadeUp 0.6s ease both 0.4s; }
+    .hero-btns     { animation: fadeUp 0.6s ease both 0.5s; }
+    .social-row    { animation: fadeUp 0.6s ease both 0.6s; }
+    .hero-right    { animation: fadeUp 0.7s ease both 0.3s; }
+  }
 
   /* ══════════════════════════════════════════
      RESPONSIVE — Tablet 900px
@@ -1560,17 +1568,19 @@
   /* ══════════════════════════════════════════
      REDUCE MOTION — ลด animation บนมือถือ
   ══════════════════════════════════════════ */
-  @media (prefers-reduced-motion: reduce), (max-width: 768px) {
+  @media (prefers-reduced-motion: reduce), (max-width: 900px) {
     .avatar-circle::before,
     .avatar-circle::after,
     .orbit-dot,
-    .prog-bar,
+    .prog-bar::after,
     .float-chip,
-    .live-dot { animation: none !important; }
+    .live-dot,
+    .wave { animation: none !important; }
     .avatar-circle::before,
     .avatar-circle::after { display: none; }
     .orbit-dot { display: none; }
     .float-chip { display: none; }
+    .wave { display: inline; }
     * { will-change: auto !important; }
   }
 
@@ -1596,7 +1606,13 @@
     transition: opacity 0.25s;
   }
   @media (max-width: 900px) {
-    .skill-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15,23,42,0.7); }
+    .skill-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15,23,42,0.7); transition: none; }
+    .skill-modal-overlay .skill-modal { transform: none !important; transition: none !important; }
+    .skill-edit-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(15,23,42,0.7); transition: none; }
+    .skill-edit-overlay .skill-edit-modal { transform: none !important; transition: none !important; }
+    .m-overlay .modal { transform: none !important; transition: none !important; }
+    .m-overlay .detail-modal { transform: none !important; transition: none !important; }
+    .m-overlay .hero-edit-modal { transform: none !important; transition: none !important; }
   }
   .skill-modal-overlay.open { opacity: 1; pointer-events: all; }
   .skill-modal {
@@ -1870,6 +1886,195 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
+
+  /* ── FULL PAGE DETAIL VIEW ── */
+  #pageDetail {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 300;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: pageSlideIn 0.25s ease both;
+  }
+  @media (max-width: 900px) {
+    #pageDetail { animation: none; }
+  }
+  @keyframes pageSlideIn {
+    from { opacity: 0; transform: translateX(32px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  #pageDetail.active { display: block; }
+  .page-detail-wrap {
+    max-width: 860px; margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .page-detail-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; margin: 20px 0 24px;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; cursor: pointer;
+    font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 600;
+    color: var(--primary); text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .page-detail-back:hover { border-color: var(--accent2); box-shadow: 0 4px 16px rgba(37,99,235,0.15); }
+  @media (max-width: 900px) {
+    .page-detail-back:hover { border-color: var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  }
+  .page-detail-hero {
+    width: 100%; max-height: 320px; object-fit: cover;
+    border-radius: 16px; display: block; background: #e5e7eb;
+    margin-bottom: 28px;
+  }
+  .page-detail-hero-placeholder {
+    width: 100%; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 80px; border-radius: 16px; margin-bottom: 28px;
+  }
+  .page-detail-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: clamp(20px, 4vw, 28px);
+    font-weight: 700; color: var(--primary);
+    line-height: 1.4; margin-bottom: 14px;
+  }
+  .page-detail-meta {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .page-detail-section {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent2);
+    margin: 28px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .page-detail-section::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(37,99,235,0.2), transparent);
+  }
+  .page-detail-desc {
+    font-size: 16px; line-height: 2; color: var(--text);
+    white-space: pre-line;
+  }
+  .page-detail-img-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-top: 8px;
+  }
+  @media (max-width: 600px) {
+    .page-detail-img-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  }
+  .page-detail-img-grid img {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover;
+    border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  @media (min-width: 901px) {
+    .page-detail-img-grid img:hover { transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+  }
+  .page-detail-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+
+  /* ── FULL PAGE: SKILL & EXPERIENCE ── */
+  #pageSkill, #pageExp {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 300;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: pageSlideIn 0.25s ease both;
+  }
+  @media (max-width: 900px) {
+    #pageSkill, #pageExp { animation: none; }
+  }
+  #pageSkill.active, #pageExp.active { display: block; }
+
+  /* Skill page */
+  .page-skill-wrap, .page-exp-wrap {
+    max-width: 700px; margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .page-skill-hero {
+    display: flex; align-items: center; gap: 24px;
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .page-skill-icon {
+    width: 96px; height: 96px; border-radius: 20px;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    border: 2px solid rgba(37,99,235,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; flex-shrink: 0; overflow: hidden;
+  }
+  .page-skill-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 18px; }
+  .page-skill-name {
+    font-family: 'Prompt', sans-serif;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 700; color: var(--primary);
+    margin-bottom: 8px;
+  }
+  .page-skill-pct-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .page-skill-pct-bar {
+    flex: 1; height: 8px; background: var(--border); border-radius: 99px; overflow: hidden;
+  }
+  .page-skill-pct-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent2), #38bdf8);
+    box-shadow: 0 0 8px rgba(37,99,235,0.35);
+    transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+  .page-skill-pct-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; font-weight: 700; color: var(--accent2);
+    min-width: 38px;
+  }
+  .page-skill-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+  /* Exp page */
+  .page-exp-header {
+    padding: 28px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .page-exp-icon-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .page-exp-icon {
+    width: 64px; height: 64px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; flex-shrink: 0;
+  }
+  .page-exp-company {
+    font-family: 'Prompt', sans-serif;
+    font-size: clamp(18px, 4vw, 26px);
+    font-weight: 800; color: var(--primary); line-height: 1.3;
+  }
+  .page-exp-sub { font-size: 13px; color: var(--muted); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+  .page-exp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .page-exp-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-family: 'Share Tech Mono', monospace;
+    background: rgba(37,99,235,0.08); color: var(--accent2);
+    border: 1px solid rgba(37,99,235,0.18);
+  }
+  .page-exp-duties {
+    list-style: none; display: flex; flex-direction: column; gap: 10px;
+  }
+  .page-exp-duties li {
+    padding: 14px 16px 14px 44px; position: relative;
+    background: var(--white); border-radius: 10px;
+    border: 1px solid var(--border); font-size: 15px; line-height: 1.75;
+  }
+  .page-exp-duties li::before {
+    content: '▸'; position: absolute; left: 16px; top: 14px;
+    color: var(--accent2); font-size: 14px;
+  }
+  .page-exp-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
 </style>
 </head>
 <body>
@@ -1923,9 +2128,9 @@
         <a href="#works" class="btn-main">ดูผลงาน ↓</a>
       </div>
       <div class="social-row">
-        <a class="soc-btn" href="#" title="Line">💬</a>
-        <a class="soc-btn" href="#" title="Email">✉️</a>
-        <a class="soc-btn" href="#" title="Phone">📱</a>
+        <a class="soc-btn" href="https://line.me/ti/p/~Tong4012" target="_blank" title="Line">💬</a>
+        <a class="soc-btn" href="mailto:pattarapong123@gmail.com" title="Email">✉️</a>
+        <a class="soc-btn" href="tel:0621971764" title="Phone: 062-197-1764">📱</a>
       </div>
     </div>
     <div class="hero-right">
@@ -1946,23 +2151,24 @@
 </div>
 
 <!-- STATS -->
-<div class="stats-bar">
-  <div class="stats-inner">
+<div class="stats-bar" style="position:relative;">
+  <button id="statsEditBtn" onclick="openStatsEdit()" style="display:none;position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:8px;font-family:'Prompt',sans-serif;font-size:12px;font-weight:600;cursor:pointer;z-index:10;">✏️ แก้ไข</button>
+  <div class="stats-inner" id="statsInner">
     <div class="stat-box">
-      <div class="stat-num" data-t="120" data-s="+">0<span>+</span></div>
-      <div class="stat-lbl">Tickets Resolved</div>
+      <div class="stat-num" id="statNum0" data-t="120" data-s="+">0<span>+</span></div>
+      <div class="stat-lbl" id="statLbl0">Tickets Resolved</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num" data-t="80" data-s="+">0<span>+</span></div>
-      <div class="stat-lbl">อุปกรณ์ที่ดูแล</div>
+      <div class="stat-num" id="statNum1" data-t="80" data-s="+">0<span>+</span></div>
+      <div class="stat-lbl" id="statLbl1">อุปกรณ์ที่ดูแล</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num" data-t="99" data-s="%">0<span>%</span></div>
-      <div class="stat-lbl">Satisfaction Rate</div>
+      <div class="stat-num" id="statNum2" data-t="99" data-s="%">0<span>%</span></div>
+      <div class="stat-lbl" id="statLbl2">Satisfaction Rate</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num" data-t="3" data-s=" ปี">0<span> ปี</span></div>
-      <div class="stat-lbl">ประสบการณ์</div>
+      <div class="stat-num" id="statNum3" data-t="3" data-s=" ปี">0<span> ปี</span></div>
+      <div class="stat-lbl" id="statLbl3">ประสบการณ์</div>
     </div>
   </div>
 </div>
@@ -2310,7 +2516,7 @@
 </footer>
 
 <!-- EXP DETAIL MODAL -->
-<div class="m-overlay" id="expDetailOverlay">
+<div class="m-overlay" id="expDetailOverlay" style="display:none">
   <div class="exp-detail-modal">
     <button class="m-close" id="expDetailClose" style="position:absolute;top:16px;right:16px;z-index:5">✕</button>
     <div class="exp-dm-header" id="expDmHeader">
@@ -2345,7 +2551,7 @@
 
 
 <!-- DETAIL MODAL (view) -->
-<div class="m-overlay" id="detailOverlay">
+<div class="m-overlay" id="detailOverlay" style="display:none">
   <div class="detail-modal">
     <button class="m-close" id="detailClose">✕</button>
     <div id="detailHeroWrap"></div>
@@ -2433,7 +2639,7 @@
 
   // ── PARTICLE / CIRCUIT CANVAS ──
   const canvas = document.getElementById('particleCanvas');
-  const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
+  const isMobile = window.innerWidth <= 900 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
   // ซ่อน canvas บน mobile ทันที ก่อน JS ทำงาน
   if (isMobile) {
@@ -2675,32 +2881,33 @@
   function openExpDetail(idx) {
     currentExpIdx = idx;
     const d = EXP_DATA[idx];
-    const hdr = document.getElementById('expDmHeader');
-    hdr.className = `exp-dm-header ${d.hdrClass}`;
-    document.getElementById('expDmIcon').style.background = d.iconBg;
-    document.getElementById('expDmIcon').textContent = d.icon;
-    document.getElementById('expDmCompany').textContent = d.company;
-    document.getElementById('expDmSub').textContent = d.sub;
-    document.getElementById('expDmMeta').innerHTML = `
-      <span class="exp-dm-chip chip-period">💼 ${d.position}</span>
-      <span class="exp-dm-chip chip-dur">📅 ${d.period} · ${d.duration}</span>
-      <span class="exp-dm-chip chip-loc">📍 ${d.location}</span>
+
+    // icon
+    const iconEl = document.getElementById('pageExpIcon');
+    iconEl.style.background = d.iconBg;
+    iconEl.textContent = d.icon;
+
+    document.getElementById('pageExpCompany').textContent = d.company;
+    document.getElementById('pageExpSub').textContent = d.sub;
+    document.getElementById('pageExpChips').innerHTML = `
+      <span class="page-exp-chip">💼 ${d.position}</span>
+      <span class="page-exp-chip">📅 ${d.period} · ${d.duration}</span>
+      <span class="page-exp-chip">📍 ${d.location}</span>
     `;
-    document.getElementById('expDmList').innerHTML = d.duties.map(t => `<li>${t}</li>`).join('');
-    document.getElementById('expDmTags').innerHTML = d.tags.map(t => `<span class="tag">${t}</span>`).join('');
-    renderExpImgGrid(idx);
-    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
-    requestAnimationFrame(() => {
-      document.getElementById('expDetailOverlay').classList.add('open');
-    });
+    document.getElementById('pageExpDuties').innerHTML = d.duties.map(t => `<li>${t}</li>`).join('');
+    document.getElementById('pageExpTags').innerHTML = d.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+    document.getElementById('pageExp').classList.add('active');
+    document.getElementById('pageExp').scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    history.pushState({ page: 'exp', idx }, '', '#exp-' + idx);
   }
 
-  document.getElementById('expDetailClose').onclick = () =>
-    document.getElementById('expDetailOverlay').classList.remove('open');
-  document.getElementById('expDetailOverlay').onclick = e => {
-    if (e.target === document.getElementById('expDetailOverlay'))
-      document.getElementById('expDetailOverlay').classList.remove('open');
-  };
+  function closePageExp() {
+    document.getElementById('pageExp').classList.remove('active');
+    document.body.style.overflow = '';
+    if (location.hash.startsWith('#exp-')) history.back();
+  }
 
   // ── WORKS — NEWS CARD SYSTEM ──
   const CATS = {
@@ -2887,26 +3094,25 @@
     const c = CATS[w.cat] || { icon:'⚙️', ncClass:'nc-other', label:w.cat, placeholderBg:'#f3f4f6' };
 
     // Hero image or placeholder
-    const heroWrap = document.getElementById('detailHeroWrap');
+    const heroWrap = document.getElementById('pageDetailHeroWrap');
     if (w.img) {
-      heroWrap.innerHTML = `<img class="detail-hero" src="${w.img}" alt="${w.title}">`;
+      heroWrap.innerHTML = `<img class="page-detail-hero" src="${w.img}" alt="${w.title}">`;
     } else {
-      heroWrap.innerHTML = `<div class="detail-hero-placeholder" style="background:${c.placeholderBg}">${c.icon}</div>`;
+      heroWrap.innerHTML = `<div class="page-detail-hero-placeholder" style="background:${c.placeholderBg}">${c.icon}</div>`;
     }
 
-    document.getElementById('detailCat').className = `news-card-cat ${c.ncClass}`;
-    document.getElementById('detailCat').textContent = `${c.icon} ${c.label}`;
-    document.getElementById('detailTitle').textContent = w.title;
-    document.getElementById('detailDate').innerHTML = `📅 ${fmtDate(w.date)}`;
-    document.getElementById('detailViews').innerHTML = w.views ? `👁 จำนวนผู้เข้าชม ${w.views}` : '';
-    document.getElementById('detailDesc').textContent = w.desc || '-';
-    document.getElementById('detailTags').innerHTML = (w.tools||'').split(',').filter(Boolean).map(t=>`<span class="tag">${t.trim()}</span>`).join('');
+    document.getElementById('pageDetailCat').className = `news-card-cat ${c.ncClass}`;
+    document.getElementById('pageDetailCat').textContent = `${c.icon} ${c.label}`;
+    document.getElementById('pageDetailTitle').textContent = w.title;
+    document.getElementById('pageDetailDate').innerHTML = `📅 ${fmtDate(w.date)}`;
+    document.getElementById('pageDetailDesc').textContent = w.desc || '-';
+    document.getElementById('pageDetailTags').innerHTML = (w.tools||'').split(',').filter(Boolean).map(t=>`<span class="tag">${t.trim()}</span>`).join('');
 
-    // Image gallery — ใช้ images[] ถ้ามี, ไม่งั้น fallback เป็น cover img
+    // Image gallery
     const rawImgs = Array.isArray(w.images) && w.images.length > 0 ? w.images : [];
     const imgs = rawImgs.length > 0 ? rawImgs : (w.img ? [w.img] : []);
-    const sec = document.getElementById('detailImagesSection');
-    const grid = document.getElementById('detailImgGrid');
+    const sec = document.getElementById('pageDetailImagesSection');
+    const grid = document.getElementById('pageDetailImgGrid');
     if (imgs.length > 0) {
       grid.innerHTML = imgs.map(src =>
         `<img src="${src}" alt="" loading="lazy" onclick="openLightbox('${src}')">`
@@ -2916,11 +3122,37 @@
       sec.style.display = 'none';
     }
 
-    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
-    requestAnimationFrame(() => {
-      document.getElementById('detailOverlay').classList.add('open');
-    });
+    // เปิด full page + scroll to top
+    document.getElementById('pageDetail').classList.add('active');
+    document.getElementById('pageDetail').scrollTop = 0;
+    document.body.style.overflow = 'hidden'; // ล็อค scroll หลัง
+    // Push hash เพื่อให้ back button ทำงาน
+    history.pushState({ page: 'work', id }, '', '#work-' + id);
   }
+
+  function closePage() {
+    document.getElementById('pageDetail').classList.remove('active');
+    document.body.style.overflow = '';
+    if (location.hash.startsWith('#work-')) history.back();
+  }
+
+  // Handle browser back button
+  window.addEventListener('popstate', () => {
+    const h = location.hash;
+    if (!h.startsWith('#work-')) {
+      document.getElementById('pageDetail').classList.remove('active');
+    }
+    if (!h.startsWith('#skill-')) {
+      document.getElementById('pageSkill').classList.remove('active');
+      document.getElementById('pageSkillBar').style.width = '0%';
+    }
+    if (!h.startsWith('#exp-')) {
+      document.getElementById('pageExp').classList.remove('active');
+    }
+    if (!h.startsWith('#work-') && !h.startsWith('#skill-') && !h.startsWith('#exp-')) {
+      document.body.style.overflow = '';
+    }
+  });
 
   // Lightbox
   function openLightbox(src) {
@@ -2984,8 +3216,7 @@
   });
 
   // Detail modal close
-  document.getElementById('detailClose').onclick = () => document.getElementById('detailOverlay').classList.remove('open');
-  document.getElementById('detailOverlay').onclick = e => { if(e.target===document.getElementById('detailOverlay')) document.getElementById('detailOverlay').classList.remove('open'); };
+  // detailOverlay replaced by full-page view
 
   // ── IMAGE UPLOAD ──
   function resetImgUpload() {
@@ -3135,7 +3366,7 @@
 </script>
 
 <!-- SKILL DETAIL MODAL -->
-<div class="skill-modal-overlay" id="skillModalOverlay">
+<div class="skill-modal-overlay" id="skillModalOverlay" style="display:none">
   <div class="skill-modal">
     <div class="skill-modal-header">
       <div class="skill-modal-icon-wrap" id="skillModalIconWrap" title="คลิกเพื่อเปลี่ยนไอคอน">
@@ -3443,32 +3674,50 @@
     if (!s) return;
     currentSkillId = id;
 
-    document.getElementById('skillModalTitle').textContent = s.name;
-    document.getElementById('skillModalDesc').textContent = s.desc;
-
-    const iconDisplay = document.getElementById('skillModalIconDisplay');
-    const iconImg = document.getElementById('skillModalIconImg');
+    // icon
+    const iconEl = document.getElementById('pageSkillIcon');
     if (s.img) {
-      iconDisplay.style.display = 'none';
-      iconImg.src = s.img;
-      iconImg.style.display = 'block';
+      iconEl.innerHTML = `<img src="${s.img}" alt="${s.name}">`;
     } else {
-      iconDisplay.textContent = s.icon || '⚙️';
-      iconDisplay.style.display = '';
-      iconDisplay.style.opacity = '1';
-      iconImg.style.display = 'none';
+      iconEl.textContent = s.icon || '⚙️';
     }
 
-    // เปิด overlay หลัง paint รอบนี้จบ — ป้องกัน flash บน mobile
+    document.getElementById('pageSkillName').textContent = s.name;
+    document.getElementById('pageSkillPct').textContent = (s.pct || 0) + '%';
+    document.getElementById('pageSkillDesc').textContent = s.desc || '-';
+
+    // tags
+    const tags = Array.isArray(s.tags) ? s.tags : [];
+    const tagsEl = document.getElementById('pageSkillTags');
+    const tagsLabel = document.getElementById('pageSkillTagsLabel');
+    if (tags.length) {
+      tagsEl.innerHTML = tags.map(t => `<span class="tag">${t}</span>`).join('');
+      tagsLabel.style.display = ''; tagsEl.style.display = '';
+    } else {
+      tagsLabel.style.display = 'none'; tagsEl.style.display = 'none';
+    }
+
+    // เปิดหน้า + animate bar
+    document.getElementById('pageSkill').classList.add('active');
+    document.getElementById('pageSkill').scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    history.pushState({ page: 'skill', id }, '', '#skill-' + (id || 'default'));
+    // delay bar animation ให้ layout เสร็จก่อน
     requestAnimationFrame(() => {
-      document.getElementById('skillModalOverlay').classList.add('open');
+      setTimeout(() => {
+        document.getElementById('pageSkillBar').style.width = (s.pct || 0) + '%';
+      }, 80);
     });
   }
 
-  document.getElementById('skillModalClose').onclick = () => document.getElementById('skillModalOverlay').classList.remove('open');
-  document.getElementById('skillModalOverlay').onclick = e => {
-    if (e.target === document.getElementById('skillModalOverlay')) document.getElementById('skillModalOverlay').classList.remove('open');
-  };
+  function closePageSkill() {
+    document.getElementById('pageSkill').classList.remove('active');
+    document.getElementById('pageSkillBar').style.width = '0%';
+    document.body.style.overflow = '';
+    if (location.hash.startsWith('#skill-')) history.back();
+  }
+
+  // skillModalOverlay replaced by full-page view
 
   document.getElementById('skillModalIconWrap').onclick = (e) => {
     e.stopPropagation();
@@ -3768,6 +4017,7 @@
     // ปุ่มเพิ่มผลงาน / เพิ่มทักษะ
     document.getElementById('fabBtn').style.display      = loggedIn ? 'inline-flex' : 'none';
     document.getElementById('btnAddSkill').style.display = loggedIn ? 'inline-flex' : 'none';
+    document.getElementById('statsEditBtn').style.display = loggedIn ? 'inline-flex' : 'none';
     // ปุ่มแก้ไขหน้าหลัก
     const heb = document.getElementById('heroEditBtn');
     heb.style.display = loggedIn ? 'inline-flex' : 'none';
@@ -4438,5 +4688,89 @@
     if (e.target === document.getElementById('expEditOverlay')) closeExpEdit();
   };
 </script>
+
+<!-- FULL PAGE DETAIL VIEW -->
+<div id="pageDetail">
+  <div class="page-detail-wrap">
+    <button class="page-detail-back" onclick="closePage()">← กลับ</button>
+    <div id="pageDetailHeroWrap"></div>
+    <div class="page-detail-meta">
+      <div class="news-card-cat" id="pageDetailCat"></div>
+      <div class="detail-date" id="pageDetailDate"></div>
+    </div>
+    <div class="page-detail-title" id="pageDetailTitle"></div>
+
+    <div class="page-detail-section">รายละเอียด</div>
+    <div class="page-detail-desc" id="pageDetailDesc"></div>
+
+    <div class="page-detail-section" id="pageDetailToolsLabel">เครื่องมือ / เทคโนโลยี</div>
+    <div class="page-detail-tags" id="pageDetailTags"></div>
+
+    <div id="pageDetailImagesSection">
+      <div class="page-detail-section">รูปภาพโครงการ</div>
+      <div class="page-detail-img-grid" id="pageDetailImgGrid"></div>
+    </div>
+    <button class="page-detail-back" onclick="closePage()" style="margin-top:40px">← กลับ</button>
+  </div>
+</div>
+
+<!-- FULL PAGE: SKILL DETAIL -->
+<div id="pageSkill">
+  <div class="page-skill-wrap">
+    <button class="page-detail-back" onclick="closePageSkill()">← กลับ</button>
+    <div class="page-skill-hero">
+      <div class="page-skill-icon" id="pageSkillIcon"></div>
+      <div style="flex:1">
+        <div class="page-skill-name" id="pageSkillName"></div>
+        <div class="page-skill-pct-row">
+          <div class="page-skill-pct-bar">
+            <div class="page-skill-pct-fill" id="pageSkillBar" style="width:0%"></div>
+          </div>
+          <div class="page-skill-pct-num" id="pageSkillPct"></div>
+        </div>
+      </div>
+    </div>
+    <div class="page-detail-section">รายละเอียด</div>
+    <div class="page-detail-desc" id="pageSkillDesc"></div>
+    <div class="page-detail-section" id="pageSkillTagsLabel" style="margin-top:28px">เทคโนโลยีที่เกี่ยวข้อง</div>
+    <div class="page-skill-tags" id="pageSkillTags"></div>
+    <button class="page-detail-back" onclick="closePageSkill()" style="margin-top:40px">← กลับ</button>
+  </div>
+</div>
+
+<!-- FULL PAGE: EXPERIENCE DETAIL -->
+<div id="pageExp">
+  <div class="page-exp-wrap">
+    <button class="page-detail-back" onclick="closePageExp()">← กลับ</button>
+    <div class="page-exp-header">
+      <div class="page-exp-icon-row">
+        <div class="page-exp-icon" id="pageExpIcon"></div>
+        <div>
+          <div class="page-exp-company" id="pageExpCompany"></div>
+          <div class="page-exp-sub" id="pageExpSub"></div>
+        </div>
+      </div>
+      <div class="page-exp-chips" id="pageExpChips"></div>
+    </div>
+    <div class="page-detail-section">หน้าที่และความรับผิดชอบ</div>
+    <ul class="page-exp-duties" id="pageExpDuties"></ul>
+    <div class="page-detail-section" style="margin-top:28px">เทคโนโลยีและเครื่องมือ</div>
+    <div class="page-exp-tags" id="pageExpTags"></div>
+    <button class="page-detail-back" onclick="closePageExp()" style="margin-top:40px">← กลับ</button>
+  </div>
+</div>
+
+<!-- STATS EDIT MODAL -->
+<div class="m-overlay" id="statsEditOverlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">📊 แก้ไข Stats</div>
+    <button class="m-close" onclick="document.getElementById('statsEditOverlay').classList.remove('open')">✕</button>
+    <div id="statsEditFields"></div>
+    <div style="display:flex;gap:10px;margin-top:24px">
+      <button onclick="saveStatsEdit()" style="flex:1;padding:12px;background:var(--primary);color:white;border:none;border-radius:10px;font-family:'Prompt',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">💾 บันทึก</button>
+      <button onclick="document.getElementById('statsEditOverlay').classList.remove('open')" style="padding:12px 20px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:10px;font-family:'Prompt',sans-serif;font-size:14px;cursor:pointer;">ยกเลิก</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

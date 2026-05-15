@@ -3363,6 +3363,67 @@
 
   loadWorks();
 
+  // ── STATS EDIT ──
+  const STATS_DEFAULT = [
+    { num: 120, suffix: '+',   label: 'Tickets Resolved' },
+    { num: 80,  suffix: '+',   label: 'อุปกรณ์ที่ดูแล' },
+    { num: 99,  suffix: '%',   label: 'Satisfaction Rate' },
+    { num: 3,   suffix: ' ปี', label: 'ประสบการณ์' },
+  ];
+
+  function getStatsData() {
+    return STATS_DEFAULT.map((d, i) => {
+      const numEl = document.getElementById('statNum' + i);
+      const lblEl = document.getElementById('statLbl' + i);
+      return {
+        num:    numEl ? parseInt(numEl.dataset.t) : d.num,
+        suffix: numEl ? numEl.dataset.s           : d.suffix,
+        label:  lblEl ? lblEl.textContent          : d.label,
+      };
+    });
+  }
+
+  function openStatsEdit() {
+    const stats = getStatsData();
+    document.getElementById('statsEditFields').innerHTML = stats.map((s, i) => `
+      <div style="margin-bottom:16px;padding:14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:1px;margin-bottom:10px;">STAT ${i+1}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label class="form-label">ตัวเลข</label>
+            <input class="form-input" id="seStatNum${i}" type="number" value="${s.num}" min="0">
+          </div>
+          <div>
+            <label class="form-label">Suffix (+, %, ปี)</label>
+            <input class="form-input" id="seStatSuf${i}" type="text" value="${s.suffix.trim()}" placeholder="+">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">ข้อความใต้ตัวเลข</label>
+          <input class="form-input" id="seStatLbl${i}" type="text" value="${s.label}">
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('statsEditOverlay').classList.add('open');
+  }
+
+  function saveStatsEdit() {
+    for (let i = 0; i < 4; i++) {
+      const num    = parseInt(document.getElementById('seStatNum' + i).value) || 0;
+      const rawSuf = document.getElementById('seStatSuf' + i).value.trim();
+      const label  = document.getElementById('seStatLbl' + i).value.trim() || '-';
+      const suffix = rawSuf ? ' ' + rawSuf : '';
+
+      const numEl = document.getElementById('statNum' + i);
+      const lblEl = document.getElementById('statLbl' + i);
+      numEl.dataset.t = num;
+      numEl.dataset.s = suffix;
+      numEl.innerHTML = num + '<span>' + suffix + '</span>';
+      lblEl.textContent = label;
+    }
+    document.getElementById('statsEditOverlay').classList.remove('open');
+  }
+
 </script>
 
 <!-- SKILL DETAIL MODAL -->
